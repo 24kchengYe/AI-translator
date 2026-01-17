@@ -1,0 +1,11 @@
+原文:
+Over the past year, we've worked with dozens of teams building large language model (LLM) agents across industries. Consistently, the most successful implementations weren't using complex frameworks or specialized libraries. Instead, they were building with simple, composable patterns.
+
+In this post, we share what we’ve learned from working with our customers and building agents ourselves, and give practical advice for developers on building effective agents.
+
+==================================================
+
+翻译:
+在过去的一年里，我们与多个团队合作，跨行业构建大型语言模型（LLM）代理。成功的实现案例一致表明，最成功的实施并没有使用复杂的框架或专业的库。相反，他们采用的是简单、可组合的模式进行构建。
+
+在这篇文章中，我们分享了与客户合作和自己构建代理所学到的经验，并为开发者提供了构建有效代理的实用建议。
