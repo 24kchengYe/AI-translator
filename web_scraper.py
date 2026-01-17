@@ -139,10 +139,10 @@ class WebScraper:
         # 获取网页内容
         html_content = self.fetch_page(url)
 
-        # 翻译HTML
+        # 翻译HTML（传递base_url以保留完整样式）
         print("正在翻译网页内容...")
         translated_html = html_parser.translate_html(
-            html_content, source_lang, target_lang, progress_callback
+            html_content, source_lang, target_lang, progress_callback, base_url=url
         )
 
         # 保存翻译结果

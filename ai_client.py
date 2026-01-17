@@ -70,34 +70,59 @@ class AIClient:
         if not texts:
             return []
 
-        # 使用特殊分隔符合并文本
-        separator = "\n###TRANSLATE_SEPARATOR###\n"
-        combined_text = separator.join(texts)
+        # 使用更可靠的编号格式
+        numbered_texts = []
+        for i, text in enumerate(texts, 1):
+            numbered_texts.append(f"[{i}] {text}")
 
-        prompt = f"""请将以下文本翻译成{target_lang}。
-文本之间使用"###TRANSLATE_SEPARATOR###"分隔。
-请保持相同的分隔符，只翻译文本内容，不要添加任何解释。
+        combined_text = "\n".join(numbered_texts)
+
+        prompt = f"""请将以下编号的文本翻译成{target_lang}。
+
+重要要求：
+1. 保持编号格式 [1], [2], [3] 等
+2. 每个编号后只输出翻译结果，不要添加任何解释
+3. 保持与原文相同的编号顺序和数量
+4. 每个翻译结果占一行
 
 原文：
-{combined_text}"""
+{combined_text}
+
+请按相同格式返回翻译结果。"""
 
         try:
             response = self.client.chat.completions.create(
                 model=self.model,
                 messages=[
-                    {"role": "system", "content": f"你是一个专业的翻译助手，擅长将各种语言翻译成{target_lang}。"},
+                    {"role": "system", "content": f"你是一个专业的翻译助手。你必须严格按照用户要求的格式返回翻译结果，保持编号格式和顺序。"},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.3
             )
 
-            # 分割翻译结果
+            # 解析翻译结果
             translated_text = response.choices[0].message.content.strip()
-            translated_list = translated_text.split(separator)
+            lines = translated_text.split('\n')
+
+            translated_list = []
+            for line in lines:
+                line = line.strip()
+                if not line:
+                    continue
+                # 移除编号前缀 [1], [2] 等
+                if line.startswith('[') and ']' in line:
+                    # 找到 ] 的位置
+                    bracket_end = line.index(']')
+                    # 提取编号后的内容
+                    content = line[bracket_end + 1:].strip()
+                    translated_list.append(content)
+                else:
+                    # 如果没有编号，直接添加
+                    translated_list.append(line)
 
             # 确保返回的列表长度与输入一致
             if len(translated_list) != len(texts):
-                # 如果数量不匹配，逐个翻译作为fallback
+                print(f"警告: 翻译结果数量不匹配 (期望 {len(texts)}, 实际 {len(translated_list)})，使用逐个翻译")
                 return [self.translate_text(text, source_lang, target_lang) for text in texts]
 
             return translated_list

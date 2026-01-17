@@ -88,7 +88,8 @@ class MainWindow(ctk.CTk):
             lang_frame,
             values=list(self.languages.keys()),
             variable=self.target_lang_var,
-            width=120
+            width=120,
+            font=self.default_font
         )
         self.target_lang_menu.pack(side="left")
 
@@ -231,7 +232,8 @@ class MainWindow(ctk.CTk):
             btn_frame,
             text="选择文件",
             command=self.select_document,
-            width=120
+            width=120,
+            font=self.default_font
         )
         self.doc_select_btn.pack(side="left", padx=5)
 
@@ -240,7 +242,8 @@ class MainWindow(ctk.CTk):
             text="开始翻译",
             command=self.translate_document,
             width=120,
-            state="disabled"
+            state="disabled",
+            font=self.default_font
         )
         self.doc_translate_btn.pack(side="left", padx=5)
 
@@ -293,7 +296,8 @@ class MainWindow(ctk.CTk):
             btn_frame,
             text="选择图片",
             command=self.select_image,
-            width=120
+            width=120,
+            font=self.default_font
         )
         self.img_select_btn.pack(side="left", padx=5)
 
@@ -302,7 +306,8 @@ class MainWindow(ctk.CTk):
             text="开始描述",
             command=self.translate_image,
             width=120,
-            state="disabled"
+            state="disabled",
+            font=self.default_font
         )
         self.img_translate_btn.pack(side="left", padx=5)
 
