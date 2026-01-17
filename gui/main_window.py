@@ -3,7 +3,7 @@
 使用CustomTkinter实现苹果极简风格界面
 """
 import customtkinter as ctk
-from tkinter import filedialog, messagebox
+from tkinter import filedialog
 import threading
 import queue
 import os
@@ -331,6 +331,113 @@ class MainWindow(ctk.CTk):
         )
         self.status_label.pack(pady=(0, 15))
 
+    def show_message(self, title: str, message: str, msg_type: str = "info"):
+        """
+        显示消息弹窗（使用Arial字体）
+
+        Args:
+            title: 标题
+            message: 消息内容
+            msg_type: 消息类型 (info/warning/error)
+        """
+        dialog = ctk.CTkToplevel(self)
+        dialog.title(title)
+        dialog.geometry("400x200")
+        dialog.resizable(False, False)
+
+        # 居中显示
+        dialog.transient(self)
+        dialog.grab_set()
+
+        # 消息内容
+        msg_label = ctk.CTkLabel(
+            dialog,
+            text=message,
+            font=self.default_font,
+            wraplength=350
+        )
+        msg_label.pack(pady=30, padx=20)
+
+        # 确定按钮
+        ok_btn = ctk.CTkButton(
+            dialog,
+            text="确定",
+            command=dialog.destroy,
+            width=100,
+            font=self.default_font
+        )
+        ok_btn.pack(pady=20)
+
+        # 等待窗口关闭
+        self.wait_window(dialog)
+
+    def show_yes_no(self, title: str, message: str) -> bool:
+        """
+        显示是/否确认弹窗（使用Arial字体）
+
+        Args:
+            title: 标题
+            message: 消息内容
+
+        Returns:
+            True: 用户点击"是"，False: 用户点击"否"
+        """
+        dialog = ctk.CTkToplevel(self)
+        dialog.title(title)
+        dialog.geometry("400x200")
+        dialog.resizable(False, False)
+
+        # 居中显示
+        dialog.transient(self)
+        dialog.grab_set()
+
+        # 用于保存用户选择
+        result = [False]
+
+        # 消息内容
+        msg_label = ctk.CTkLabel(
+            dialog,
+            text=message,
+            font=self.default_font,
+            wraplength=350
+        )
+        msg_label.pack(pady=30, padx=20)
+
+        # 按钮区域
+        btn_frame = ctk.CTkFrame(dialog, fg_color="transparent")
+        btn_frame.pack(pady=20)
+
+        def on_yes():
+            result[0] = True
+            dialog.destroy()
+
+        def on_no():
+            result[0] = False
+            dialog.destroy()
+
+        yes_btn = ctk.CTkButton(
+            btn_frame,
+            text="是",
+            command=on_yes,
+            width=80,
+            font=self.default_font
+        )
+        yes_btn.pack(side="left", padx=10)
+
+        no_btn = ctk.CTkButton(
+            btn_frame,
+            text="否",
+            command=on_no,
+            width=80,
+            font=self.default_font
+        )
+        no_btn.pack(side="left", padx=10)
+
+        # 等待窗口关闭
+        self.wait_window(dialog)
+
+        return result[0]
+
     def update_status(self, message: str, progress: float = None):
         """更新状态"""
         self.status_label.configure(text=message)
@@ -346,7 +453,7 @@ class MainWindow(ctk.CTk):
         """翻译网页"""
         urls_text = self.url_textbox.get("1.0", "end").strip()
         if not urls_text:
-            messagebox.showwarning("警告", "请输入至少一个网页URL")
+            self.show_message("警告", "请输入至少一个网页URL", "warning")
             return
 
         urls = [url.strip() for url in urls_text.split('\n') if url.strip()]
@@ -391,7 +498,7 @@ class MainWindow(ctk.CTk):
         """翻译文本"""
         text = self.text_input.get("1.0", "end").strip()
         if not text:
-            messagebox.showwarning("警告", "请输入要翻译的文本")
+            self.show_message("警告", "请输入要翻译的文本", "warning")
             return
 
         target_lang = self.get_target_language()
@@ -451,7 +558,7 @@ class MainWindow(ctk.CTk):
     def translate_document(self):
         """翻译文档"""
         if not self.selected_doc_path:
-            messagebox.showwarning("警告", "请先选择文档")
+            self.show_message("警告", "请先选择文档", "warning")
             return
 
         target_lang = self.get_target_language()
@@ -509,7 +616,7 @@ class MainWindow(ctk.CTk):
     def translate_image(self):
         """翻译图片"""
         if not self.selected_img_path:
-            messagebox.showwarning("警告", "请先选择图片")
+            self.show_message("警告", "请先选择图片", "warning")
             return
 
         target_lang = self.get_target_language()
@@ -553,13 +660,13 @@ class MainWindow(ctk.CTk):
                 elif msg[0] == "error":
                     _, error_msg = msg
                     self.update_status("错误", 0)
-                    messagebox.showerror("错误", error_msg)
+                    self.show_message("错误", error_msg, "error")
                     self._enable_all_buttons()
 
                 elif msg[0] == "webpage_complete":
                     _, results = msg
                     self.update_status(f"完成！翻译了 {len(results)} 个网页", 1.0)
-                    messagebox.showinfo("完成", f"成功翻译 {len(results)} 个网页\n\n文件保存在 webpages/ 文件夹")
+                    self.show_message("完成", f"成功翻译 {len(results)} 个网页\n\n文件保存在 webpages/ 文件夹")
                     self.webpage_btn.configure(state="normal")
 
                 elif msg[0] == "text_complete":
@@ -567,22 +674,22 @@ class MainWindow(ctk.CTk):
                     self.text_output.delete("1.0", "end")
                     self.text_output.insert("1.0", translated)
                     self.update_status("翻译完成", 1.0)
-                    messagebox.showinfo("完成", f"翻译完成\n\n保存至: {file_path}")
+                    self.show_message("完成", f"翻译完成\n\n保存至: {file_path}")
                     self.text_btn.configure(state="normal")
 
                 elif msg[0] == "document_complete":
                     _, result = msg
                     self.update_status("翻译完成", 1.0)
-                    result = messagebox.askyesno("完成", f"文档翻译完成\n\n保存至: {result}\n\n是否打开文件？")
-                    if result:
+                    should_open = self.show_yes_no("完成", f"文档翻译完成\n\n保存至: {result}\n\n是否打开文件？")
+                    if should_open:
                         os.startfile(msg[1])
                     self._enable_document_buttons()
 
                 elif msg[0] == "image_complete":
                     _, result = msg
                     self.update_status("处理完成", 1.0)
-                    result_msg = messagebox.askyesno("完成", f"图片描述完成\n\n保存至: {result}\n\n是否打开文件？")
-                    if result_msg:
+                    should_open = self.show_yes_no("完成", f"图片描述完成\n\n保存至: {result}\n\n是否打开文件？")
+                    if should_open:
                         os.startfile(msg[1])
                     self._enable_image_buttons()
 
