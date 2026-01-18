@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git rm:*)"
+      "Bash(git rm:*)",
+      "Bash(python:*)",
+      "Bash(powershell -Command \"Get-Process python | Where-Object {$_MainWindowTitle -like ''*翻译*''} | Stop-Process -Force\")"
     ]
   }
 }

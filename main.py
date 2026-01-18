@@ -3,7 +3,7 @@ AI翻译软件主程序
 启动GUI应用
 """
 import sys
-from gui.main_window import run_gui
+from gui.main_window_new import run_gui
 
 
 def main():

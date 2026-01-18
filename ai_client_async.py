@@ -1,33 +1,33 @@
 """
-AI API客户端
-用于与OpenRouter API交互
+AI API异步客户端
+使用asyncio提供更高的并发性能
 """
-from openai import OpenAI
+import asyncio
+from openai import AsyncOpenAI
 from config import config
 from utils.retry_decorator import retry_with_backoff
 
 
-class AIClient:
-    """AI客户端类"""
+class AsyncAIClient:
+    """异步AI客户端类"""
 
     def __init__(self):
-        """初始化AI客户端"""
+        """初始化异步AI客户端"""
         config.validate()
-        self.client = OpenAI(
+        self.client = AsyncOpenAI(
             api_key=config.OPENAI_API_KEY,
             base_url=config.OPENAI_BASE_URL
         )
         self.model = config.OPENAI_MODEL
 
-    @retry_with_backoff()
-    def translate_text(self, text: str, source_lang: str = "auto", target_lang: str = "Chinese") -> str:
+    async def translate_text_async(self, text: str, source_lang: str = "auto", target_lang: str = "Chinese") -> str:
         """
-        翻译文本
+        异步翻译文本
 
         Args:
             text: 要翻译的文本
-            source_lang: 源语言，默认auto自动检测
-            target_lang: 目标语言，默认Chinese
+            source_lang: 源语言
+            target_lang: 目标语言
 
         Returns:
             翻译后的文本
@@ -42,7 +42,7 @@ class AIClient:
 {text}"""
 
         try:
-            response = self.client.chat.completions.create(
+            response = await self.client.chat.completions.create(
                 model=self.model,
                 messages=[
                     {"role": "system", "content": f"你是一个专业的翻译助手，擅长将各种语言翻译成{target_lang}。"},
@@ -54,10 +54,9 @@ class AIClient:
         except Exception as e:
             raise Exception(f"翻译失败: {str(e)}")
 
-    @retry_with_backoff()
-    def translate_batch(self, texts: list, source_lang: str = "auto", target_lang: str = "Chinese") -> list:
+    async def translate_batch_async(self, texts: list, source_lang: str = "auto", target_lang: str = "Chinese") -> list:
         """
-        批量翻译文本（优化API调用）
+        异步批量翻译文本
 
         Args:
             texts: 文本列表
@@ -92,7 +91,7 @@ class AIClient:
 务必返回{len(texts)}行翻译结果，每行格式：[数字] 翻译内容"""
 
         try:
-            response = self.client.chat.completions.create(
+            response = await self.client.chat.completions.create(
                 model=self.model,
                 messages=[
                     {"role": "system", "content": f"你是一个专业的翻译助手。你必须严格按照用户要求的格式返回翻译结果，保持编号格式和顺序。"},
@@ -124,7 +123,6 @@ class AIClient:
                         if 1 <= number <= len(texts):
                             translated_dict[number] = content
                     except (ValueError, IndexError):
-                        # 解析失败，跳过这行
                         continue
 
             # 按顺序构建结果列表
@@ -133,73 +131,22 @@ class AIClient:
                 if i in translated_dict:
                     translated_list.append(translated_dict[i])
                 else:
-                    # 缺失的编号，标记为需要单独翻译
                     translated_list.append(None)
 
             # 检查是否有缺失
             if None in translated_list or len(translated_list) != len(texts):
-                missing_count = translated_list.count(None) if None in translated_list else abs(len(translated_list) - len(texts))
-                print(f"警告: 翻译结果不完整 (缺失 {missing_count} 个)，使用逐个翻译")
-                return [self.translate_text(text, source_lang, target_lang) for text in texts]
+                print(f"警告: 异步批量翻译结果不完整，fallback到逐个翻译")
+                # 使用普通客户端的逐个翻译
+                from ai_client import ai_client
+                return [ai_client.translate_text(text, source_lang, target_lang) for text in texts]
 
             return translated_list
         except Exception as e:
-            # 出错时fallback到逐个翻译
-            print(f"批量翻译失败，使用逐个翻译: {str(e)}")
-            return [self.translate_text(text, source_lang, target_lang) for text in texts]
-
-    @retry_with_backoff()
-    def describe_image(self, image_path: str, target_lang: str = "Chinese") -> str:
-        """
-        使用GPT-4o Vision描述图片内容
-
-        Args:
-            image_path: 图片路径
-            target_lang: 描述语言
-
-        Returns:
-            图片描述文本
-        """
-        import base64
-
-        # 读取并编码图片
-        with open(image_path, 'rb') as image_file:
-            image_data = base64.b64encode(image_file.read()).decode('utf-8')
-
-        # 判断图片格式
-        if image_path.lower().endswith('.png'):
-            mime_type = 'image/png'
-        elif image_path.lower().endswith(('.jpg', '.jpeg')):
-            mime_type = 'image/jpeg'
-        else:
-            mime_type = 'image/jpeg'
-
-        try:
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {
-                        "role": "user",
-                        "content": [
-                            {
-                                "type": "text",
-                                "text": f"请用{target_lang}详细描述这张图片的内容，包括图片中的文字、场景、物体等所有信息。"
-                            },
-                            {
-                                "type": "image_url",
-                                "image_url": {
-                                    "url": f"data:{mime_type};base64,{image_data}"
-                                }
-                            }
-                        ]
-                    }
-                ],
-                temperature=0.3
-            )
-            return response.choices[0].message.content.strip()
-        except Exception as e:
-            raise Exception(f"图片描述失败: {str(e)}")
+            print(f"异步批量翻译失败: {str(e)}")
+            # 失败时fallback
+            from ai_client import ai_client
+            return [ai_client.translate_text(text, source_lang, target_lang) for text in texts]
 
 
-# 创建全局客户端实例
-ai_client = AIClient()
+# 创建全局异步客户端实例
+async_ai_client = AsyncAIClient()

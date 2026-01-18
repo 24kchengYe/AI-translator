@@ -17,9 +17,13 @@ class Config:
     OPENAI_MODEL = os.getenv('OPENAI_MODEL', 'openai/gpt-4o')
 
     # 翻译设置
-    BATCH_SIZE = int(os.getenv('BATCH_SIZE', '25'))
+    BATCH_SIZE = int(os.getenv('BATCH_SIZE', '15'))  # 降低批次大小以增加并发批次数
     MAX_RETRIES = int(os.getenv('MAX_RETRIES', '3'))
     RETRY_DELAY = int(os.getenv('RETRY_DELAY', '5'))
+
+    # 并行翻译设置
+    MAX_WORKERS = int(os.getenv('MAX_WORKERS', '12'))  # 提高默认并发数
+    PARALLEL_ENABLED = os.getenv('PARALLEL_ENABLED', 'true').lower() == 'true'  # 是否启用并行翻译
 
     # 网页抓取
     REQUEST_TIMEOUT = int(os.getenv('REQUEST_TIMEOUT', '10'))
