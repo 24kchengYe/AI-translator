@@ -1,3 +1,4 @@
+\![Visitors](https://visitor-badge.laobi.icu/badge?page_id=24kchengYe.AI-translator)
 # AI翻译助手
 
 基于AI API的多场景翻译软件，支持网页、文本、文档和图片翻译。
